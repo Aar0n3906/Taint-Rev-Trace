@@ -1,44 +1,61 @@
 # content-search-core
 
-Core library for handling large text files search and replace efficiently. This crate provides the backend functionality for the Content Search application layer.
+`content-search-core` 是 `Taint-Rev-Trace` 的内容搜索核心库，负责处理超大文本文件或 Trace 文件的读取、索引、条件搜索与替换能力。
 
-## Features
+它为上层图形界面和 MCP 服务提供统一的后端基础设施，重点解决“大文件能否高效搜索与按需读取”的问题。
 
-*   **Memory Mapping**: Uses `memmap2` for efficient file access without loading the entire file into RAM.
-*   **Encoding Support**: Handles various text encodings (UTF-8, UTF-16, Windows-1252, etc.) using `encoding_rs`.
-*   **Fast Indexing**: Indexes line offsets for quick random access to any line in the file.
-*   **Search Engine**: Supports plain text and regex searching with multi-threaded processing.
-*   **Efficient Replacement**: Performs search and replace operations, with optimizations for in-place replacements when lengths match.
+## 功能特性
 
-## Modules
+- **内存映射读取**：基于 `memmap2` 访问文件，避免把整份文件一次性载入内存
+- **编码处理**：基于 `encoding_rs` 兼容 `UTF-8`、`UTF-16`、`Windows-1252` 等常见文本编码
+- **快速行索引**：构建行起始偏移索引，支持快速随机访问任意行
+- **索引缓存复用**：支持缓存索引结果，减少重复打开大文件时的初始化开销
+- **条件搜索**：支持普通文本搜索、正则搜索、大小写控制、总命中计数和分页获取
+- **高效替换**：支持单点替换与全量替换，并在长度一致时尽量走原地优化路径
+
+## 模块说明
 
 ### `file_reader`
-Handles opening files via memory mapping and provides methods to read chunks of text with proper encoding decoding.
+
+负责通过内存映射打开文件，并提供按块读取与按编码解码文本的能力。
 
 ### `line_indexer`
-Builds an index of line start offsets. For extremely large files, it can use sparse sampling to estimate line positions while keeping memory usage low.
+
+负责构建行起始偏移索引。  
+对于超大文件，可以通过稀疏采样降低内存占用，同时仍保留较快的行定位能力。
 
 ### `search_engine`
-Provides functionality to search for strings or regular expressions. It supports:
-*   Counting total matches.
-*   Fetching matches in chunks/pages.
-*   Case-sensitive and case-insensitive search.
+
+负责普通文本与正则表达式的条件搜索，支持：
+
+- 统计总命中数
+- 按页或按块拉取匹配结果
+- 大小写敏感与非敏感搜索
 
 ### `replacer`
-Handles writing changes back to the file. It supports:
-*   Single occurrence replacement.
-*   Global search and replace.
-*   In-place replacement optimization when the new text length matches the old text length.
 
-## Usage
+负责把变更写回文件，支持：
 
-Add this to your `Cargo.toml`:
+- 单个命中替换
+- 全局搜索替换
+- 在新旧文本长度相同时进行原地替换优化
+
+## 适用场景
+
+- ARM Trace 文件的快速定位与条件搜索
+- 大体积文本日志的按行读取与上下文提取
+- 在不牺牲内存占用的前提下进行大文件内容处理
+- 为上层污点追踪、MCP 工具或图形界面提供统一基础能力
+
+## 接入方式
+
+在 `Cargo.toml` 中添加：
 
 ```toml
 [dependencies]
 content-search-core = { path = "crates/content-search-core" }
 ```
 
-## License
+## 开源许可
 
-MIT
+MIT 许可协议
