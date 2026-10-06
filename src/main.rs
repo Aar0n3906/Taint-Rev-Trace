@@ -3,9 +3,11 @@ mod mcp_install;
 
 use app::TextViewerApp;
 use eframe::egui;
+#[cfg(target_os = "windows")]
 use std::path::Path;
 
-fn configure_fonts(ctx: &egui::Context) {
+#[cfg(target_os = "windows")]
+fn configure_fonts_windows(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
 
     for (font_name, font_path) in [
@@ -34,6 +36,33 @@ fn configure_fonts(ctx: &egui::Context) {
     }
 }
 
+#[cfg(target_os = "linux")]
+fn configure_fonts_linux(ctx: &egui::Context) {
+    let mut fonts = egui::FontDefinitions::default();
+
+    // 使用 include_bytes! 宏，直接读取项目根目录下的字体文件
+    let font_data = include_bytes!("../font/SourceHanSansSC-Normal.otf"); // 黑体
+
+    // 将字体数据插入 egui 字体库
+    fonts.font_data.insert(
+        "simhei".to_owned(),
+        egui::FontData::from_static(font_data).into(),
+    );
+
+    // 将 "simhei" 设置为比例字体（Proportional）的第一优先级
+    if let Some(vec) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
+        vec.insert(0, "simhei".to_owned());
+    }
+
+    // 将 "simhei" 设置为等宽字体（Monospace）的第一优先级
+    if let Some(vec) = fonts.families.get_mut(&egui::FontFamily::Monospace) {
+        vec.insert(0, "simhei".to_owned());
+    }
+
+    // 生效配置
+    ctx.set_fonts(fonts);
+}
+
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -46,7 +75,10 @@ fn main() -> eframe::Result<()> {
         "Taint Rev Trace",
         options,
         Box::new(|cc| {
-            configure_fonts(&cc.egui_ctx);
+            #[cfg(target_os = "windows")]
+            configure_fonts_windows(&cc.egui_ctx);
+            #[cfg(target_os = "linux")]
+            configure_fonts_linux(&cc.egui_ctx);
             Ok(Box::new(TextViewerApp::default()))
         }),
     )
